@@ -1,0 +1,118 @@
+{
+  "name": "__MSG_extension_name__",
+  "version": "0.7.1",
+  "description": "__MSG_extension_description__",
+  "default_locale": "en",
+  "manifest_version": 3,
+  "content_scripts": [
+    {
+      "matches": [
+        "https://videochatru.com/*",
+        "https://chatruletka.com/*",
+        "https://ome.tv/*",
+        "https://chatroulette.msk.ru/*"
+      ],
+      "js": [
+        "libs/js/jquery.min.js",
+        "libs/js/leaflet/leaflet.js",
+        "libs/js/face-api.min.js",
+        "libs/js/arrive.min.js",
+        "libs/js/tooltipster.bundle.min.js",
+        "controls.js",
+        "controls/header.js",
+        "controls/tab-about.js",
+        "controls/tab-api.js",
+        "controls/tab-bans.js",
+        "controls/tab-map.js",
+        "controls/tab-settings.js",
+        "controls/tab-settings-automation.js",
+        "controls/tab-settings-blacklist.js",
+        "controls/tab-settings-faceapi.js",
+        "controls/tab-settings-geolocation.js",
+        "controls/tab-settings-hotkeys.js",
+        "controls/tab-settings-interface.js",
+        "controls/tab-settings-risky.js",
+        "controls/tab-settings-stats.js",
+        "controls/tab-settings-streamer.js",
+        "controls/tab-stats.js",
+        "content.js",
+        "hotkeys.js",
+        "utils.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "16": "resources/img/icon.png",
+    "48": "resources/img/icon.png",
+    "128": "resources/img/icon.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "injection/*.js",
+        "resources/models",
+        "libs/js/nsfwjs.min.js",
+        "resources/models/*",
+        "libs/js/leaflet/*",
+        "resources/audio/*.mp3",
+        "resources/*.mp4",
+        "libs/css/css-tooltip.min.css",
+        "controls*.html",
+        "libs/css/tooltipster.bundle.min.css",
+        "resources/dark-mode.css"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "action": {
+    "default_title": "__MSG_extension_name__",
+    "default_icon": {
+      "16": "resources/img/icon.png",
+      "48": "resources/img/icon.png",
+      "128": "resources/img/icon.png"
+    }
+  },
+  "permissions": [
+    "storage",
+    "activeTab",
+    "unlimitedStorage",
+    "tabs",
+    "webRequest"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "commands": {
+    "skip": {
+      "suggested_key": {
+        "default": "Alt+Left"
+      },
+      "description": "Skip"
+    },
+    "skip_ban": {
+      "description": "Skip + Ban"
+    },
+    "screen_remote": {
+      "suggested_key": {
+        "default": "Alt+Up"
+      },
+      "description": "Remote Screenshot"
+    },
+    "screen_local": {
+      "suggested_key": {
+        "default": "Alt+Down"
+      },
+      "description": "Local Screenshot"
+    },
+    "stop": {
+      "suggested_key": {
+        "default": "Alt+Right"
+      },
+      "description": "Stop"
+    },
+    "switch": {
+      "description": "Switch from the current tab to the chat tab and back..."
+    }
+  }
+}

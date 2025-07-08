@@ -1,5 +1,11 @@
+<<<<<<< Updated upstream
 npm-debug.log
 node_modules/
 /webpack_builds/
 tmp/
 .idea/
+||||||| Stash base
+=======
+src2/
+src3/
+>>>>>>> Stashed changes

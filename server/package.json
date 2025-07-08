@@ -1,0 +1,16 @@
+{
+  "dependencies": {
+    "@ladjs/country-language": "^1.0.3",
+    "cors": "^2.8.5",
+    "debounce-async": "^0.0.2",
+    "express": "^4.21.2",
+    "google-translate-free": "^2.4.5",
+    "morgan": "^1.10.0",
+    "open-google-translator": "^1.0.5",
+    "play-sound": "^1.1.6",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7",
+    "winston": "^3.17.0"
+  },
+  "type": "module"
+}

@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# Define the directory of the script
+script_dir=$(dirname "$(realpath "$0")")
+options_file="$script_dir/rofi-audio.txt"
+last_played_file="/tmp/rofi-audio-last-line"
+
+# Function to play the audio
+play_audio() {
+    local line_number=$1
+    local line_text
+    line_text=$(sed -n "${line_number}p" "$options_file")
+
+    # Remove leading and trailing whitespace from the line
+    line_text=$(echo "$line_text" | xargs)
+
+    # If line_text is empty, exit the function
+    if [ -z "$line_text" ]; then
+        echo "No text found for line number $line_number"
+        exit 0
+    fi
+
+    # Create a hash of the chosen text to use as the filename
+    hashoftext=$(echo -n "$line_text" | sha256sum | cut -d' ' -f1)
+
+    # Define the path to the generated MP3 file
+    mp3_file="$HOME/Documents/rofi-audio/$hashoftext.mp3"
+
+    # Check if the file already exists, if not generate it using gtts-cli
+    if [ ! -f "$mp3_file" ]; then
+        gtts-cli "$line_text" -l ru -o "$mp3_file"
+    fi
+
+    # Notify the user
+    notify-send "Playing: $line_text"
+
+    # Play the generated MP3 file using Audacious
+    audacious "$mp3_file"
+
+    # Save the last played line number
+    echo "$line_number" > "$last_played_file"
+}
+
+# If the user wants to stop the currently playing audio
+if [ "${1:-}" = "stop" ]; then
+    # Use Audacious' CLI to stop playback
+    audacious --stop
+    exit 0
+fi
+
+# If the user wants to play the next line number
+if [ "${1:-}" = "next" ]; then
+    # Read the last played line number
+    if [ -f "$last_played_file" ]; then
+        last_line=$(cat "$last_played_file")
+    else
+        last_line=0
+    fi
+
+    # Increment the line number to play the next line
+    next_line=$((last_line + 1))
+    play_audio "$next_line"
+    exit 0
+fi
+
+# If the user wants to choose a specific line number
+if [ "${1:-}" = "choose" ] && [ -n "${2:-}" ]; then
+    play_audio "$2"
+    exit 0
+fi
+
+# If the user wants to use rofi to choose an option interactively
+if [ "${1:-}" = "rofi" ]; then
+    options=$(<"$options_file")
+    chosen=$(echo -e "$options" | rofi -dmenu -p "Play")
+
+    # Remove leading and trailing whitespace from the chosen option
+    chosen=$(echo "$chosen" | xargs)
+
+    # If chosen is empty, exit the script
+    if [ -z "$chosen" ]; then
+        exit 0
+    fi
+
+    # Find the line number of the chosen option
+    line_number=$(grep -nFx "$chosen" "$options_file" | cut -d: -f1)
+
+    # Play the chosen line number
+    play_audio "$line_number"
+    exit 0
+fi
+
+# If no valid arguments are passed, show an error message
+echo "Invalid command. Use 'stop', 'next', 'choose <line_number>', or 'rofi'."
+exit 1
