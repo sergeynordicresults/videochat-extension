@@ -8,11 +8,9 @@ import crypto from "node:crypto";
 import util from "node:util";
 import {
   spawn,
-  exec as execCallback,
   execFile as execFileCallback,
   execSync,
 } from "node:child_process";
-const exec = util.promisify(execCallback);
 const execFile = util.promisify(execFileCallback);
 import morgan from "morgan";
 import winston from "winston";
@@ -21,7 +19,6 @@ import {
   showRofiDialog,
   getElemOfNonEmptyArray,
   txtFile__loadLines,
-  txtFile__doesExist,
 } from "./utils.js";
 import { translateLines } from "./translate-with-cache.js";
 import * as CountryLanguage from "@ladjs/country-language";
@@ -248,6 +245,8 @@ async function playAudio(reqLogger, lineIndex, language) {
 const app = express();
 
 app.use(cors()); // allows any origin
+const resourcesDir = "/home/srghma/projects/videochatru-extension/public/resources";
+app.use('/resources', express.static(resourcesDir));
 
 const reqIdCounters = {};
 app.use((req, _res, next) => {
@@ -480,6 +479,8 @@ app.get("/autoplay_start", async (req, res) => {
     return;
   }
 
+  reqLogger.error(`country ${countryIso}`);
+
   if (!countryIso) {
     logAndSend(res, 400, reqLogger, "error", `Unknown country: ${country}`);
     return;
@@ -492,6 +493,7 @@ app.get("/autoplay_start", async (req, res) => {
     logAndSend(res, 500, reqLogger, "error", "Failed to get language for country");
     return;
   }
+  reqLogger.error(`country ${language}`);
 
   res.send(`Autoplay started for country ${country} (ISO: ${countryIso}) language ${language}`);
 
