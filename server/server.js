@@ -112,7 +112,6 @@ const logger = winston.createLogger({
 });
 
 function notifySend(text) {
-  return
   const u = { 3300: "normal", 3301: "low", 3302: "low" }[port];
   if (!u) throw new Error(`Invalid urgency level for port ${port}`);
   execFile("notify-send", [
@@ -297,6 +296,17 @@ app.get("/stop", async (_req, res) => {
 });
 
 // Example usage:
+function stopAfter() {
+  const optionsFile = path.join(__dirname, `stopAfter.txt`)
+  try {
+    const content = fs.readFileSync(optionsFile, "utf-8")
+    return content === "" ? parseInt(content, 10) : null
+  } catch (e) {
+    console.error(e)
+    return null
+  }
+}
+
 async function startAutoplay(reqLogger, language) {
   try {
     if (globalState.currentAudioProcess) {
@@ -338,17 +348,6 @@ async function startAutoplay(reqLogger, language) {
       );
       globalState.lastReadLineIndex = globalState.lastReadLineIndex + 1;
 
-      function stopAfter() {
-        const optionsFile = path.join(__dirname, `stopAfter.txt`)
-        try {
-          const content = fs.readFileSync(optionsFile, "utf-8")
-          return content === "" ? parseInt(content, 10) : null
-        } catch (e) {
-          console.error(e)
-          return null
-        }
-      }
-
       if (globalState.lastReadLineIndex >= (stopAfter() || txtFile__loadLines(language).length)) {
         reqLogger.info("Reached end of file. Stopping autoplay.");
         globalState.autoplaying = false;
@@ -377,29 +376,29 @@ function memoizeAsync(fn) {
   }
 }
 
-async function fetchCountries() {
-  return new Promise((resolve, reject) => {
-    CountryLanguage.getCountries((err, countries) => {
-      if (err) reject(err);
-      else resolve(countries);
-    })
-  })
-}
+const countries = CountryLanguage.getCountries()
 
 // Russia -> ru
 // russia -> ru
 // Ukraine -> ...
-const memoizedGetCountries = memoizeAsync(fetchCountries);
 
 // countryFullNameToCountryIso is async now
 async function countryFullNameToCountryIso(country) {
   if (!country) return null;
 
-  const countries = await memoizedGetCountries();
   const lower = country.toLowerCase();
 
   if (/^[a-z]{2}$/.test(lower)) {
     return lower;
+  }
+
+  const foundKnown = {
+    russia: 'ru',
+    ukraine: 'ua',
+  }
+
+  if (foundKnown[lower]) {
+    return foundKnown[lower];
   }
 
   // Full exact match
@@ -420,7 +419,9 @@ async function countryFullNameToCountryIso(country) {
 // Async wrapper for CountryLanguage.getCountryLanguages
 async function fetchCountryLanguages(country) {
   return new Promise((resolve, reject) => {
+    console.log('CountryLanguage.getCountryLanguages resp')
     CountryLanguage.getCountryLanguages(country.toLowerCase(), (err, langs) => {
+      console.log('CountryLanguage.getCountryLanguages resp', err, countries)
       if (err) reject(err);
       else resolve(langs);
     });
@@ -511,7 +512,9 @@ app.get("/autoplay_start", async (req, res) => {
     .catch(reqLogger.error.bind(reqLogger));
 });
 
-app.get("/autoplay_stop", async (_req, res) => {
+app.get("/autoplay_stop", async (req, res) => {
+  const { reqLogger } = req;
+  console.log('/autoplay_stop', reqLogger, globalState.currentAudioProcess)
   startAutoplay_debounced.stop();
   if (globalState.currentAudioProcess) {
     globalState.currentAudioProcess.kill();
