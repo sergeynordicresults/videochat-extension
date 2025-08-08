@@ -226,6 +226,44 @@
     // Create global state instance
     const globalState = createGlobalState();
 
+    function UtteranceList({ utterances, onPlay }) {
+      return (
+        React.createElement(
+          'ul',
+          {
+            id: 'utteranceList',
+            style: {
+              // margin-top: 100px;
+              marginTop: '30px',
+              paddingLeft: '20px',
+              width: '100%'
+              // position: 'fixed',
+              // bottom: 0,
+              // left: 0,
+              // width: '100vw',
+              // maxHeight: '150px',
+              // overflowY: 'auto',
+              // margin: 0,
+              // padding: '8px 20px',
+              // backgroundColor: '#fafafa',
+              // borderTop: '1px solid #ccc',
+              // boxShadow: '0 -2px 8px rgba(0,0,0,0.1)',
+              // fontSize: 'small',
+              // zIndex: 9999,
+              // boxSizing: 'border-box',
+            }
+          },
+          utterances.map((line, index) =>
+            React.createElement('li', {
+              key: index,
+              style: { cursor: 'pointer', margin: '4px 0', fontSize: 'x-small' },
+              onClick: () => onPlay(index)
+            }, `${index + 1}. ${line}`)
+          )
+        )
+      );
+    }
+
     function ControlPanel() {
       const [allowedCountriesText, setAllowedCountriesText] = useState('Russia, Ukraine');
       const [port, setPort] = useState(getPort());
@@ -234,6 +272,28 @@
       const sessionId = React.useMemo(() => Math.random().toString(36).slice(2), []);
       const lastFoundCountryRef = useRef('ru');
       const [sendAutoplayOnNewFoundUser, setSendAutoplayOnNewFoundUser] = useState(true);
+
+      // Reference to #roulette container and created div for portal
+      const [portalContainer, setPortalContainer] = React.useState(null);
+
+      React.useEffect(async () => {
+        const roulette = await waitForElement('#roulette > .roulette-box');
+        if (!roulette) {
+          throw new Error('!roulette')
+        };
+
+        const container = document.createElement('div');
+        container.id = 'my-utterences-list'
+        roulette.appendChild(container);
+        setPortalContainer(container);
+
+        // cleanup
+        return () => {
+          if (container.parentNode) {
+            container.parentNode.removeChild(container);
+          }
+        };
+      }, []);
 
       const refreshUtterances = async () => {
         const res = await fetch(`${musicPlayerServerHost(port)}/refresh_list`);
@@ -356,131 +416,127 @@
       };
 
       return createElement(
-        'div',
-        {
-          style: {
-            marginTop: '10px',
-            padding: '8px',
-            border: '1px solid #ccc',
-            background: '#fafafa',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            flexWrap: 'wrap',
-            // maxWidth: '400px',
-            flexDirection: 'column',
-          }
-        },
-        // Status indicator
-        createElement('div', {
-          style: { display: 'flex', gap: '8px', width: '100%' }
-        },
+        React.Fragment,
+        null,
+        createElement(
+          'div',
+          {
+            style: {
+              marginTop: '10px',
+              padding: '8px',
+              background: 'rgb(193 214 230)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              flexWrap: 'wrap',
+              // maxWidth: '400px',
+              flexDirection: 'column',
+            }
+          },
+          // Status indicator
           createElement('div', {
-            style: {
-              padding: '4px 8px',
-              borderRadius: '4px',
-              fontSize: '12px',
-              fontWeight: 'bold',
-              background: currentState === 'found' ? '#2ecc71' :
-                currentState === 'searching' ? '#f39c12' :
-                  currentState === 'skip' ? '#e74c3c' : '#95a5a6',
-              color: 'white'
-            }
-          }, `Status: ${currentState.toUpperCase()}`),
-          createElement('span', {
-            style: {
-              padding: '4px 8px',
-              borderRadius: '4px',
-              fontSize: '12px',
-              fontWeight: 'bold',
-              background: sendAutoplayOnNewFoundUser ? '#27ae60' : '#c0392b',
-              color: 'white'
-            }
-          }, sendAutoplayOnNewFoundUser ? 'Sending autoplay on new found user' : 'Not sending autoplay on new user'),
-        ),
+            style: { display: 'flex', gap: '8px', width: '100%' }
+          },
+            createElement('div', {
+              style: {
+                padding: '4px 8px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                background: currentState === 'found' ? '#2ecc71' :
+                  currentState === 'searching' ? '#f39c12' :
+                    currentState === 'skip' ? '#e74c3c' : '#95a5a6',
+                color: 'white'
+              }
+            }, `Status: ${currentState.toUpperCase()}`),
+            createElement('span', {
+              style: {
+                padding: '4px 8px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                background: sendAutoplayOnNewFoundUser ? '#27ae60' : '#c0392b',
+                color: 'white'
+              }
+            }, sendAutoplayOnNewFoundUser ? 'Sending autoplay on new found user' : 'Not sending autoplay on new user'),
+          ),
 
-        // inputs
-        createElement('div', {
-          style: { display: 'flex', gap: '8px', width: '100%' }
-        },
-          createElement('input', {
-            type: 'text',
-            value: allowedCountriesText,
-            onChange: e => setAllowedCountriesText(e.target.value),
-            placeholder: 'Allow only countries',
-            style: { width: '100%', padding: '4px' },
-            title: 'Comma-separated list of countries to allow',
-          }),
-          createElement('input', {
-            type: 'text',
-            value: port,
-            onChange: onPortChange,
-            placeholder: 'Server port',
-            style: { width: '70px', padding: '4px' },
-            title: 'Port for the music player server (numeric only)',
-          }),
-        ),
+          // inputs
+          createElement('div', {
+            style: { display: 'flex', gap: '8px', width: '100%' }
+          },
+            createElement('input', {
+              type: 'text',
+              value: allowedCountriesText,
+              onChange: e => setAllowedCountriesText(e.target.value),
+              placeholder: 'Allow only countries',
+              style: { width: '100%', padding: '4px' },
+              title: 'Comma-separated list of countries to allow',
+            }),
+            createElement('input', {
+              type: 'text',
+              value: port,
+              onChange: onPortChange,
+              placeholder: 'Server port',
+              style: { width: '70px', padding: '4px' },
+              title: 'Port for the music player server (numeric only)',
+            }),
+          ),
 
-        // buttons
-        createElement('div', {
-          style: { display: 'flex', gap: '8px', width: '100%' }
-        },
-          createElement(
-            'button',
-            {
-              onClick: autoplayStart,
+          // buttons
+          createElement('div', {
+            style: { display: 'flex', gap: '8px', width: '100%' }
+          },
+            createElement(
+              'button',
+              {
+                onClick: autoplayStart,
+                style: {
+                  padding: '4px 12px',
+                  background: '#2ecc71',
+                  color: '#fff',
+                  border: 'none',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                }
+              },
+              'Autoplay Start'
+            ),
+            createElement(
+              'button',
+              {
+                onClick: autoplayStop,
+                style: {
+                  padding: '4px 12px',
+                  background: 'red',
+                  color: '#fff',
+                  border: 'none',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                }
+              },
+              'Autoplay Stop'
+            ),
+            createElement('button', {
+              onClick: () => setSendAutoplayOnNewFoundUser(prev => !prev),
               style: {
                 padding: '4px 12px',
-                background: '#2ecc71',
+                background: sendAutoplayOnNewFoundUser ? '#27ae60' : '#c0392b',
                 color: '#fff',
                 border: 'none',
                 cursor: 'pointer',
                 userSelect: 'none',
               }
-            },
-            'Autoplay Start'
+            }, sendAutoplayOnNewFoundUser ? 'Autoplay ON' : 'Autoplay OFF'),
           ),
-          createElement(
-            'button',
-            {
-              onClick: autoplayStop,
-              style: {
-                padding: '4px 12px',
-                background: 'red',
-                color: '#fff',
-                border: 'none',
-                cursor: 'pointer',
-                userSelect: 'none',
-              }
-            },
-            'Autoplay Stop'
-          ),
-          createElement('button', {
-            onClick: () => setSendAutoplayOnNewFoundUser(prev => !prev),
-            style: {
-              padding: '4px 12px',
-              background: sendAutoplayOnNewFoundUser ? '#27ae60' : '#c0392b',
-              color: '#fff',
-              border: 'none',
-              cursor: 'pointer',
-              userSelect: 'none',
-            }
-          }, sendAutoplayOnNewFoundUser ? 'Autoplay ON' : 'Autoplay OFF'),
         ),
 
-        // Utterances list
-        createElement('ul', {
-          id: "utteranceList",
-          style: { marginTop: '10px', paddingLeft: '20px', width: '100%' }
-        },
-          utterances.map((line, index) =>
-            createElement('li', {
-              key: index,
-              style: { cursor: 'pointer', margin: '4px 0', fontSize: 'x-small' },
-              onClick: () => playUtterance(index)
-            }, `${index + 1}. ${line}`)
+        portalContainer
+          ? ReactDOM.createPortal(
+            createElement(UtteranceList, { utterances, onPlay: playUtterance }),
+            portalContainer
           )
-        ),
+          : null
       );
     }
 
@@ -504,6 +560,13 @@
       }
       #roulette.vertical .roulette-box .chat-container .buttons .buttons__wrapper .buttons__button {
         min-height: 20px;
+      }
+      #utteranceList li:focus {
+        outline: none;  /* remove default focus ring */
+        border: 2px solid #3498db;
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: #eef6ff;
       }
     `;
     document.head.appendChild(style);
