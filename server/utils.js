@@ -10,14 +10,17 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export function txtFile__getPath(language) {
+  if (!language) { throw new Error('empty arg') }
   return path.join(__dirname, `rofi-audio--${language}.txt`)
 }
 
 export function txtFile__doesExist(language) {
+  if (!language) { throw new Error('empty arg') }
   return fs.existsSync(txtFile__getPath(language))
 }
 
 export function txtFile__loadLines(language) {
+  if (!language) { throw new Error('empty arg') }
   const optionsFile = txtFile__getPath(language);
   console.log("optionsFile", optionsFile);
 
@@ -47,6 +50,8 @@ export function txtFile__loadLines(language) {
 // clapIndex(2, 3); // 2
 // clapIndex(2, 4); // 2
 export function clapIndex(maxIndex, index) {
+  if (!Number.isInteger(maxIndex)) { throw new Error(`empty arg maxIndex ${maxIndex}`) }
+  if (!Number.isInteger(index)) { throw new Error(`empty arg index ${index}`) }
   if (index < 0) throw new Error("index must be positive");
   if (maxIndex < 0) throw new Error("maxIndex must be positive");
   return min(index, maxIndex);
@@ -68,6 +73,8 @@ export function clapIndex(maxIndex, index) {
 // rotateIndex(2, 4); // 1
 // rotateIndex(2, 4); // 2
 export function rotateIndex(maxIndex, index) {
+  if (!Number.isInteger(maxIndex)) { throw new Error(`empty arg maxIndex ${maxIndex}`) }
+  if (!Number.isInteger(index)) { throw new Error(`empty arg index ${index}`) }
   if (index < 0) throw new Error("index must be positive");
   if (maxIndex < 0) throw new Error("maxIndex must be positive");
   return index % (maxIndex + 1);
@@ -81,6 +88,7 @@ export function rotateIndex(maxIndex, index) {
 // getElemOfNonEmptyArray([1, 2, 3], 3); // 3
 // getElemOfNonEmptyArray([1, "foo", 3], 4); // "foo"
 export function getElemOfNonEmptyArray(array, index) {
+  if (!Number.isInteger(index)) { throw new Error(`empty arg index ${index}`) }
   if (index < 0) throw new Error("index must be positive");
   const { length } = array;
   if (length === 0) throw new Error("array must not be empty");
@@ -88,6 +96,9 @@ export function getElemOfNonEmptyArray(array, index) {
 }
 
 async function showRofiDialog_(reqLogger, language) {
+  if (!reqLogger) { throw new Error('empty arg reqLogger') }
+  if (!language) { throw new Error('empty arg language') }
+
   try {
     const inputText = txtFile__loadLines(language)
       .map((line, index) => `${index + 1}: ${line}`)
@@ -106,6 +117,8 @@ async function showRofiDialog_(reqLogger, language) {
 }
 
 export async function showRofiDialog(reqLogger, language) {
+  if (!reqLogger) { throw new Error('empty arg reqLogger') }
+  if (!language) { throw new Error('empty arg language') }
   const stdout = await showRofiDialog_(reqLogger, language);
   // console.log('stdout', stdout)
   if (!stdout) {
