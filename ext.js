@@ -1,12 +1,12 @@
 // ==UserScript==
-// @name         New Userscript
-// @namespace    http://tampermonkey.net/
+// @name         Chatruletka - dont repeat, play audio using custom server
+// @namespace    https://github.com/sergeynordicresults/videochat-extension
 // @version      2025-08-08
-// @description  try to take over the world!
-// @author       You
+// @description  allows to play audio to not repeat same thing, works together with this server https://github.com/sergeynordicresults/videochat-extension/blob/main/server/server.js, plays https://github.com/sergeynordicresults/videochat-extension/blob/main/server/rofi-audio--ru.txt
+// @author       Serhii Khoma
 // @match        https://chatruletka.com/
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=chatruletka.com
-// @run-at      document-idle
+// @run-at       document-idle
 // @grant        none
 // ==/UserScript==
 
