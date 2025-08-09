@@ -196,10 +196,16 @@ function mplayer(reqLogger, mp3File, language) {
     childProcess.once("close", (code) => {
       reqLogger.info(`${program} close: code=${code}, pid=${childProcess.pid}`);
       cleanup();
-      if (code === 0 || code === null || code === 1 || code === 123) {
+      if (
+        code === 0
+        || code === null
+        || code === 1
+        || code === 123
+        || code === 4 // mpv
+      ) {
         resolve();
       } else {
-        reject(new Error(`Process exited with code ${code}`));
+        reject(new Error(`Process exited with unknown code ${code}`));
       }
     });
 
