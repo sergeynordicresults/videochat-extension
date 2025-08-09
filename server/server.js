@@ -114,15 +114,17 @@ const logger = winston.createLogger({
 function notifySend(text) {
   const u = { 3300: "normal", 3301: "low", 3302: "low" }[port];
   if (!u) throw new Error(`Invalid urgency level for port ${port}`);
-  execFile("notify-send", [
-    // "-u",
-    // u,
-    "-c",
-    `chat${port - 3299}`,
-    "-a",
-    `chat${port - 3299}`,
-    text
-  ]);
+  if (globalState.notifySend) {
+    execFile("notify-send", [
+      // "-u",
+      // u,
+      "-c",
+      `chat${port - 3299}`,
+      "-a",
+      `chat${port - 3299}`,
+      text
+    ]);
+  }
 }
 
 function txtFile__getLineByIndex(index, language) {
@@ -135,6 +137,7 @@ const globalState = {
   lastReadLineIndex: 0,
   currentAudioProcess: null,
   stopAfter: null,
+  notifySend: true,
 };
 
 const generateMp3Path = (lineText) => {
@@ -275,13 +278,13 @@ app.use(morganMiddleware);
 app.get("/next", async (req, res) => {
   const { reqLogger } = req;
   res.send("Playing next line");
-  await playAudio(reqLogger, globalState.lastReadLineIndex + 1, globalState.lastLanguage);
+  playAudio(reqLogger, globalState.lastReadLineIndex + 1, globalState.lastLanguage);
 });
 
 app.get("/prev", async (req, res) => {
   const { reqLogger } = req;
   res.send("Playing previous line");
-  await playAudio(reqLogger, globalState.lastReadLineIndex - 1, globalState.lastLanguage);
+  playAudio(reqLogger, globalState.lastReadLineIndex - 1, globalState.lastLanguage);
 });
 
 app.get("/stop", async (_req, res) => {
@@ -544,6 +547,23 @@ app.get("/refresh_list", async (req, res) => {
   res.send(lines);
 });
 
+app.get("/notify_send", async (req, res) => {
+  const { reqLogger } = req;
+  reqLogger.info(`/notify_send sending ${JSON.stringify(globalState.notifySend)}`);
+  res.json(globalState.notifySend);
+});
+
+app.post("/notify_send", express.json(), async (req, res) => {
+  const { value } = req.body;
+  if (typeof value !== "boolean") {
+    return res.status(400).json({ error: "value must be boolean" });
+  }
+
+  globalState.notifySend = value;
+  req.reqLogger.info(`notifySend updated to ${JSON.stringify(value)}`);
+  res.json({ success: true, value });
+});
+
 app.get("/set_stop_after/:myint", async (req, res) => {
   globalState.stopAfter = req.params.myint === "" ? parseInt(req.params.myint, 10) : null
   res.send(`${globalState.stopAfter}`);
@@ -566,7 +586,7 @@ app.get("/rofi", async (req, res) => {
     globalState.currentAudioProcess.kill();
   }
   res.send(`Rofi: selected ${lineIndex}`);
-  await playAudio(reqLogger, lineIndex, language);
+  playAudio(reqLogger, lineIndex, language);
 });
 
 app.listen(port, () => logger.info(`Server running on port ${port}`));

@@ -135,7 +135,7 @@
     audio.play().catch(e => console.warn("Audio play failed:", e));
   }
 
-  async function get_extpectTextResponse(url) {
+  async function get_fetchTextResponse(url) {
     try {
       const res = await fetch(url);
       const text = await res.text();
@@ -221,7 +221,9 @@
     const audioBaseURL = `http://localhost:${getPort()}/resources/audio`;
 
     const audioFound = new Audio(`${audioBaseURL}/found.mp3`);
+    audioFound.preload = 'auto';
     const audioSkip = new Audio(`${audioBaseURL}/skip.mp3`);
+    audioSkip.preload = 'auto';
 
     // Create global state instance
     const globalState = createGlobalState();
@@ -273,6 +275,7 @@
       const lastFoundCountryRef = useRef('ru');
       const [sendAutoplayOnNewFoundUser, setSendAutoplayOnNewFoundUser] = useState(true);
       const [isStateChangeSoundEnabled, setIsStateChangeSoundEnabled] = useState(true);
+      const [notifySend, setNotifySend] = useState(null);
 
       // Reference to #roulette container and created div for portal
       const [portalContainer, setPortalContainer] = React.useState(null);
@@ -305,10 +308,20 @@
         setUtterances(array)
       };
 
+      const refreshNotifySend = async () => {
+        const res = await fetch(`${musicPlayerServerHost(port)}/notify_send`);
+        const b = await res.json();
+        if (typeof b !== 'boolean') {
+          throw new Error(`not boolean ${b}`);
+        }
+        setNotifySend(b);
+      };
+
       useEffect(() => {
         console.log('setAllowedCountries')
         globalState.setAllowedCountries(countriesTextToArray(allowedCountriesText));
         refreshUtterances()
+        refreshNotifySend()
         // start watching chat messages
         try {
           globalState.startObserver();
@@ -346,7 +359,7 @@
         const unsubscribe = globalState.setOnStateChanged(newStateArray => {
           console.log('State changed undistinctly to:', newStateArray);
           const [stateType, foundAllowedCountry] = newStateArray;
-          lastFoundCountryRef.ref = foundAllowedCountry
+          lastFoundCountryRef.current = foundAllowedCountry
 
           if (stateType === "found") {
             if (foundAllowedCountry === null) {
@@ -371,11 +384,11 @@
 
           if (stateType === "searching") {
             console.log('User disconnected — stopping autoplay');
-            get_extpectTextResponse(`${musicPlayerServerHost(port)}/autoplay_stop?sessionId=${sessionId}`);
+            get_fetchTextResponse(`${musicPlayerServerHost(port)}/autoplay_stop?sessionId=${sessionId}`);
           } else if (stateType === "found" && foundAllowedCountry !== null && sendAutoplayOnNewFoundUser) {
             console.log(`Starting autoplay for ${foundAllowedCountry}`);
             if (isStateChangeSoundEnabled) { playAudio(audioFound); }
-            get_extpectTextResponse(
+            get_fetchTextResponse(
               `${musicPlayerServerHost(port)}/autoplay_start?waitMilliseconds=2000&country=${foundAllowedCountry.toLowerCase()}&sessionId=${sessionId}`
             );
           }
@@ -403,17 +416,21 @@
         if (!lastFoundCountry) {
           throw new Error(`no lastFoundCountry ${lastFoundCountry}`)
         };
-        get_extpectTextResponse(
+        get_fetchTextResponse(
           `${musicPlayerServerHost(port)}/autoplay_start?waitMilliseconds=2000&country=${lastFoundCountry.toLowerCase()}&sessionId=${sessionId}`
         );
       };
 
       const autoplayStop = () => {
-        get_extpectTextResponse(`${musicPlayerServerHost(port)}/autoplay_stop?sessionId=${sessionId}`);
+        get_fetchTextResponse(`${musicPlayerServerHost(port)}/autoplay_stop?sessionId=${sessionId}`);
       };
 
       const playUtterance = async (index) => {
-        get_extpectTextResponse(`${musicPlayerServerHost(port)}/choose/${encodeURIComponent(index + 1)}`);
+        get_fetchTextResponse(`${musicPlayerServerHost(port)}/choose/${encodeURIComponent(index + 1)}`);
+      };
+
+      const rofi = async () => {
+        get_fetchTextResponse(`${musicPlayerServerHost(port)}/rofi`);
       };
 
       return createElement(
@@ -474,6 +491,29 @@
                 cursor: 'pointer',
               }
             }, isStateChangeSoundEnabled ? 'State change sound enabled' : 'State change sound disabled'),
+            createElement('span', {
+              onClick: () => setNotifySend(prev => {
+                if (prev === null) { return null }
+                const n = !prev
+                if (n !== prev) {
+                  fetch(`${musicPlayerServerHost(port)}/notify_send`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ value: n })
+                  })
+                }
+                return n
+              }),
+              style: {
+                padding: '4px 8px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                background: notifySend === null ? 'gray' : notifySend ? '#27ae60' : '#c0392b',
+                color: 'white',
+                cursor: 'pointer',
+              }
+            }, notifySend === null ? 'Loading...' : notifySend ? 'Notify send enabled' : 'Notify send disabled'),
           ),
 
           // inputs
@@ -500,14 +540,19 @@
 
           // buttons
           createElement('div', {
-            style: { display: 'flex', gap: '8px', width: '100%' }
+            style: {
+              display: 'flex',
+              gap: '4px',
+              width: '100%',
+              fontSize: '19px'
+            }
           },
             createElement(
               'button',
               {
                 onClick: autoplayStart,
                 style: {
-                  padding: '4px 12px',
+                  padding: '2px 6px',
                   background: '#2ecc71',
                   color: '#fff',
                   border: 'none',
@@ -522,7 +567,7 @@
               {
                 onClick: autoplayStop,
                 style: {
-                  padding: '4px 12px',
+                  padding: '2px 6px',
                   background: 'red',
                   color: '#fff',
                   border: 'none',
@@ -531,6 +576,21 @@
                 }
               },
               'Autoplay Stop'
+            ),
+            createElement(
+              'button',
+              {
+                onClick: rofi,
+                style: {
+                  padding: '2px 6px',
+                  background: 'blue',
+                  color: '#fff',
+                  border: 'none',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                }
+              },
+              'Rofi'
             ),
           ),
         ),
@@ -566,7 +626,6 @@
         min-height: 20px;
       }
       #utteranceList li:focus {
-        outline: none;  /* remove default focus ring */
         border: 2px solid #3498db;
         padding: 2px 6px;
         border-radius: 4px;
