@@ -272,6 +272,7 @@
       const sessionId = React.useMemo(() => Math.random().toString(36).slice(2), []);
       const lastFoundCountryRef = useRef('ru');
       const [sendAutoplayOnNewFoundUser, setSendAutoplayOnNewFoundUser] = useState(true);
+      const [isStateChangeSoundEnabled, setIsStateChangeSoundEnabled] = useState(true);
 
       // Reference to #roulette container and created div for portal
       const [portalContainer, setPortalContainer] = React.useState(null);
@@ -351,7 +352,7 @@
             if (foundAllowedCountry === null) {
               // Country not in allowed list - skip
               console.log('Playing skip audio and clicking next');
-              playAudio(audioSkip);
+              if (isStateChangeSoundEnabled) { playAudio(audioSkip); }
               const nextBtn = Array.from(document.querySelectorAll('.btn.btn-main')).find(
                 btn => btn.textContent.trim().toLowerCase() === 'next'
               );
@@ -373,7 +374,7 @@
             get_extpectTextResponse(`${musicPlayerServerHost(port)}/autoplay_stop?sessionId=${sessionId}`);
           } else if (stateType === "found" && foundAllowedCountry !== null && sendAutoplayOnNewFoundUser) {
             console.log(`Starting autoplay for ${foundAllowedCountry}`);
-            playAudio(audioFound);
+            if (isStateChangeSoundEnabled) { playAudio(audioFound); }
             get_extpectTextResponse(
               `${musicPlayerServerHost(port)}/autoplay_start?waitMilliseconds=2000&country=${foundAllowedCountry.toLowerCase()}&sessionId=${sessionId}`
             );
@@ -384,7 +385,7 @@
           unsubscribe();
           unsubscribeDistinct();
         }
-      }, [port, sessionId, allowedCountriesText]);
+      }, [port, sessionId, allowedCountriesText, isStateChangeSoundEnabled]);
 
       // Save port if valid (simple numeric check)
       const onPortChange = (e) => {
@@ -450,15 +451,29 @@
               }
             }, `Status: ${currentState.toUpperCase()}`),
             createElement('span', {
+              onClick: () => setSendAutoplayOnNewFoundUser(prev => !prev),
               style: {
                 padding: '4px 8px',
                 borderRadius: '4px',
                 fontSize: '12px',
                 fontWeight: 'bold',
                 background: sendAutoplayOnNewFoundUser ? '#27ae60' : '#c0392b',
-                color: 'white'
+                color: 'white',
+                cursor: 'pointer',
               }
             }, sendAutoplayOnNewFoundUser ? 'Sending autoplay on new found user' : 'Not sending autoplay on new user'),
+            createElement('span', {
+              onClick: () => setIsStateChangeSoundEnabled(prev => !prev),
+              style: {
+                padding: '4px 8px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                background: isStateChangeSoundEnabled ? '#27ae60' : '#c0392b',
+                color: 'white',
+                cursor: 'pointer',
+              }
+            }, isStateChangeSoundEnabled ? 'State change sound enabled' : 'State change sound disabled'),
           ),
 
           // inputs
@@ -517,17 +532,6 @@
               },
               'Autoplay Stop'
             ),
-            createElement('button', {
-              onClick: () => setSendAutoplayOnNewFoundUser(prev => !prev),
-              style: {
-                padding: '4px 12px',
-                background: sendAutoplayOnNewFoundUser ? '#27ae60' : '#c0392b',
-                color: '#fff',
-                border: 'none',
-                cursor: 'pointer',
-                userSelect: 'none',
-              }
-            }, sendAutoplayOnNewFoundUser ? 'Autoplay ON' : 'Autoplay OFF'),
           ),
         ),
 
