@@ -2,7 +2,7 @@
 // @name         Chatruletka - dont repeat, play audio using custom server
 // @namespace    https://github.com/sergeynordicresults/videochat-extension
 // @version      2025-08-08
-// @description  allows to play audio to not repeat same thing, works together with this server https://github.com/sergeynordicresults/videochat-extension/blob/main/server/server.js, plays https://github.com/sergeynordicresults/videochat-extension/blob/main/server/rofi-audio--ru.txt
+// @description  allows to play audio to not repeat same thing, works together with this server https://github.com/sergeynordicresults/videochat-extension/blob/main/server/server.js, plays https://github.com/sergeynordicresults/videochat-extension/blob/main/server/rofi-audio--ru.txt. Also one can use https://github.com/sergeynordicresults/videochat-extension/blob/main/server/cli.js in https://github.com/sergeynordicresults/.dotfiles/blob/663dc7e60fecb89f24d5ffcda73c1a12ea50eb5c/i3/config#L281
 // @author       Serhii Khoma
 // @match        https://chatruletka.com/
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=chatruletka.com
