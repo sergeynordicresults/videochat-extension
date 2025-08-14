@@ -195,6 +195,7 @@ function mplayer(reqLogger, mp3File, language) {
 
     childProcess.once("close", (code) => {
       reqLogger.info(`${program} close: code=${code}, pid=${childProcess.pid}`);
+      notifySend(`audio stop`);
       cleanup();
       if (
         code === 0

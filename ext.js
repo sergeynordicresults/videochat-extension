@@ -624,7 +624,19 @@
     const buttonsWrapper = await waitForElement('.chat-container > .buttons > .buttons__wrapper', 30000)
     const container = document.createElement('div');
     buttonsWrapper.appendChild(container);
-    ReactDOM.createRoot(container).render(React.createElement(ControlPanel));
+
+    if (ReactDOM.createRoot) {
+      // React 18+
+      ReactDOM.createRoot(container).render(
+        React.createElement(ControlPanel)
+      );
+    } else {
+      // React 17 or older UMD
+      ReactDOM.render(
+        React.createElement(ControlPanel),
+        container
+      );
+    }
 
     // Remove navbar if present
     const hpNavbar = document.getElementById('hpNavbar');
