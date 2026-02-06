@@ -3,7 +3,7 @@
 import express from "express";
 import fs from "node:fs";
 import path from "node:path";
-import cors from 'cors'
+import cors from "cors";
 import crypto from "node:crypto";
 import util from "node:util";
 import {
@@ -43,10 +43,13 @@ const playerByPort = {
   3300: {
     program: "mplayer",
     args: (mp3File, speedUp) => [
-      "-speed", speedUp ? "1.4" : "1.1",
-      "-af", "scaletempo",
-      "-volume", "30",
-      mp3File
+      "-speed",
+      speedUp ? "1.4" : "1.1",
+      "-af",
+      "scaletempo",
+      "-volume",
+      "30",
+      mp3File,
     ],
   },
   3301: {
@@ -55,7 +58,7 @@ const playerByPort = {
       "--no-video",
       "--volume=30",
       `--speed=${speedUp ? "1.4" : "1.1"}`,
-      mp3File
+      mp3File,
     ],
   },
   3302: {
@@ -65,10 +68,13 @@ const playerByPort = {
   3303: {
     program: "ffplay",
     args: (mp3File, speedUp) => [
-      "-nodisp", "-autoexit",
-      "-volume", "30",
-      "-af", `atempo=${speedUp ? "1.4" : "1.1"}`,
-      mp3File
+      "-nodisp",
+      "-autoexit",
+      "-volume",
+      "30",
+      "-af",
+      `atempo=${speedUp ? "1.3" : "1.1"}`,
+      mp3File,
     ],
   },
 };
@@ -112,7 +118,7 @@ const logger = winston.createLogger({
 });
 
 function notifySend(text) {
-  const u = { 3300: "normal", 3301: "low", 3302: "low" }[port];
+  const u = { 3300: "normal", 3301: "low", 3302: "low", 3303: "low" }[port];
   if (!u) throw new Error(`Invalid urgency level for port ${port}`);
   if (globalState.notifySend) {
     execFile("notify-send", [
@@ -122,7 +128,7 @@ function notifySend(text) {
       `chat${port - 3299}`,
       "-a",
       `chat${port - 3299}`,
-      text
+      text,
     ]);
   }
 }
@@ -151,7 +157,7 @@ const waitForExit = (reqLogger, proc) =>
     if (!proc) return res();
     proc.once("exit", (code, signal) => {
       reqLogger.info(
-        `${proc.spawnfile || "process"} exit: code=${code}, signal=${signal}, pid=${proc.pid}`
+        `${proc.spawnfile || "process"} exit: code=${code}, signal=${signal}, pid=${proc.pid}`,
       );
       if (globalState.currentAudioProcess === proc) {
         globalState.currentAudioProcess = null;
@@ -165,7 +171,7 @@ function mplayer(reqLogger, mp3File, language) {
     // If there's a running player, kill & wait
     if (globalState.currentAudioProcess) {
       reqLogger.info(
-        `Killing existing ${globalState.currentAudioProcess.spawnfile || "process"} pid=${globalState.currentAudioProcess.pid}`
+        `Killing existing ${globalState.currentAudioProcess.spawnfile || "process"} pid=${globalState.currentAudioProcess.pid}`,
       );
       const oldProc = globalState.currentAudioProcess;
       oldProc.kill();
@@ -198,11 +204,11 @@ function mplayer(reqLogger, mp3File, language) {
       notifySend(`audio stop`);
       cleanup();
       if (
-        code === 0
-        || code === null
-        || code === 1
-        || code === 123
-        || code === 4 // mpv
+        code === 0 ||
+        code === null ||
+        code === 1 ||
+        code === 123 ||
+        code === 4 // mpv
       ) {
         resolve();
       } else {
@@ -211,16 +217,24 @@ function mplayer(reqLogger, mp3File, language) {
     });
 
     childProcess.once("exit", (code, signal) => {
-      reqLogger.info(`${program} exit: code=${code}, signal=${signal}, pid=${childProcess.pid}`);
+      reqLogger.info(
+        `${program} exit: code=${code}, signal=${signal}, pid=${childProcess.pid}`,
+      );
       cleanup();
     });
   });
 }
 
 async function playAudio(reqLogger, lineIndex, language) {
-  if (!reqLogger) { throw new Error(`empty arg reqLogger ${reqLogger}`) }
-  if (!Number.isInteger(lineIndex)) { throw new Error(`empty arg lineIndex ${lineIndex}`) }
-  if (!language) { throw new Error(`empty arg ${language} language`) }
+  if (!reqLogger) {
+    throw new Error(`empty arg reqLogger ${reqLogger}`);
+  }
+  if (!Number.isInteger(lineIndex)) {
+    throw new Error(`empty arg lineIndex ${lineIndex}`);
+  }
+  if (!language) {
+    throw new Error(`empty arg ${language} language`);
+  }
 
   reqLogger.info(`playAudio called with lineIndex: ${lineIndex}`);
   const lineText = txtFile__getLineByIndex(lineIndex, language);
@@ -254,8 +268,9 @@ async function playAudio(reqLogger, lineIndex, language) {
 const app = express();
 
 app.use(cors()); // allows any origin
-const resourcesDir = "/home/srghma/projects/videochatru-extension/public/resources";
-app.use('/resources', express.static(resourcesDir));
+const resourcesDir =
+  "/home/srghma/projects/videochatru-extension/public/resources";
+app.use("/resources", express.static(resourcesDir));
 
 const reqIdCounters = {};
 app.use((req, _res, next) => {
@@ -285,13 +300,21 @@ app.use(morganMiddleware);
 app.get("/next", async (req, res) => {
   const { reqLogger } = req;
   res.send("Playing next line");
-  playAudio(reqLogger, globalState.lastReadLineIndex + 1, globalState.lastLanguage);
+  playAudio(
+    reqLogger,
+    globalState.lastReadLineIndex + 1,
+    globalState.lastLanguage,
+  );
 });
 
 app.get("/prev", async (req, res) => {
   const { reqLogger } = req;
   res.send("Playing previous line");
-  playAudio(reqLogger, globalState.lastReadLineIndex - 1, globalState.lastLanguage);
+  playAudio(
+    reqLogger,
+    globalState.lastReadLineIndex - 1,
+    globalState.lastLanguage,
+  );
 });
 
 app.get("/stop", async (_req, res) => {
@@ -299,21 +322,21 @@ app.get("/stop", async (_req, res) => {
   if (globalState.currentAudioProcess) {
     globalState.currentAudioProcess.kill();
   }
-  globalState.autoplaying = false
-  globalState.currentAudioProcess = null
+  globalState.autoplaying = false;
+  globalState.currentAudioProcess = null;
   res.send("Stopped audio");
   notifySend("/stop");
 });
 
 // Example usage:
 function stopAfter() {
-  const optionsFile = path.join(__dirname, `stopAfter.txt`)
+  const optionsFile = path.join(__dirname, `stopAfter.txt`);
   try {
-    const content = fs.readFileSync(optionsFile, "utf-8")
-    return content === "" ? parseInt(content, 10) : null
+    const content = fs.readFileSync(optionsFile, "utf-8");
+    return content === "" ? parseInt(content, 10) : null;
   } catch (e) {
-    console.error(e)
-    return null
+    console.error(e);
+    return null;
   }
 }
 
@@ -322,10 +345,10 @@ async function startAutoplay(reqLogger, language) {
     if (globalState.currentAudioProcess) {
       globalState.currentAudioProcess.kill();
     }
-    globalState.autoplaying = true
-    globalState.lastReadLineIndex = 0
-    globalState.lastLanguage = language
-    globalState.currentAudioProcess = null
+    globalState.autoplaying = true;
+    globalState.lastReadLineIndex = 0;
+    globalState.lastLanguage = language;
+    globalState.currentAudioProcess = null;
     while (globalState.autoplaying) {
       reqLogger.info(
         `autoplaying_start while 1, autoplaying: ${globalState.autoplaying}, pid: ${globalState.currentAudioProcess && globalState.currentAudioProcess.pid}`,
@@ -334,7 +357,11 @@ async function startAutoplay(reqLogger, language) {
       reqLogger.info(
         `autoplaying_start while 2, autoplaying: ${globalState.autoplaying}, pid: ${globalState.currentAudioProcess && globalState.currentAudioProcess.pid}`,
       );
-      await playAudio(reqLogger, globalState.lastReadLineIndex, globalState.lastLanguage);
+      await playAudio(
+        reqLogger,
+        globalState.lastReadLineIndex,
+        globalState.lastLanguage,
+      );
       reqLogger.info(
         `autoplaying_start while 3, autoplaying: ${globalState.autoplaying}, pid: ${globalState.currentAudioProcess && globalState.currentAudioProcess.pid}`,
       );
@@ -358,7 +385,10 @@ async function startAutoplay(reqLogger, language) {
       );
       globalState.lastReadLineIndex = globalState.lastReadLineIndex + 1;
 
-      if (globalState.lastReadLineIndex >= (stopAfter() || txtFile__loadLines(language).length)) {
+      if (
+        globalState.lastReadLineIndex >=
+        (stopAfter() || txtFile__loadLines(language).length)
+      ) {
         reqLogger.info("Reached end of file. Stopping autoplay.");
         globalState.autoplaying = false;
         break;
@@ -378,15 +408,15 @@ function memoizeAsync(fn) {
 
   return async function (arg) {
     if (cache.has(arg)) {
-      return cache.get(arg)
+      return cache.get(arg);
     }
-    const result = await fn(arg)
-    cache.set(arg, result)
-    return result
-  }
+    const result = await fn(arg);
+    cache.set(arg, result);
+    return result;
+  };
 }
 
-const countries = CountryLanguage.getCountries()
+const countries = CountryLanguage.getCountries();
 
 // Russia -> ru
 // russia -> ru
@@ -403,22 +433,22 @@ async function countryFullNameToCountryIso(country) {
   }
 
   const foundKnown = {
-    russia: 'ru',
-    ukraine: 'ua',
-  }
+    russia: "ru",
+    ukraine: "ua",
+  };
 
   if (foundKnown[lower]) {
     return foundKnown[lower];
   }
 
   // Full exact match
-  const found = countries.find(c => c.name.toLowerCase() === lower);
+  const found = countries.find((c) => c.name.toLowerCase() === lower);
   if (found && found.iso2) {
     return found.iso2.toLowerCase();
   }
 
   // Partial match
-  const partial = countries.find(c => c.name.toLowerCase().includes(lower));
+  const partial = countries.find((c) => c.name.toLowerCase().includes(lower));
   if (partial && partial.iso2) {
     return partial.iso2.toLowerCase();
   }
@@ -429,9 +459,9 @@ async function countryFullNameToCountryIso(country) {
 // Async wrapper for CountryLanguage.getCountryLanguages
 async function fetchCountryLanguages(country) {
   return new Promise((resolve, reject) => {
-    console.log('CountryLanguage.getCountryLanguages resp')
+    console.log("CountryLanguage.getCountryLanguages resp");
     CountryLanguage.getCountryLanguages(country.toLowerCase(), (err, langs) => {
-      console.log('CountryLanguage.getCountryLanguages resp', err, countries)
+      console.log("CountryLanguage.getCountryLanguages resp", err, countries);
       if (err) reject(err);
       else resolve(langs);
     });
@@ -458,7 +488,7 @@ async function countryIsoToLanguageIso(country) {
 }
 
 function logAndSend(res, status, logger, loggerFnName, text) {
-  if (typeof logger[loggerFnName] === 'function') {
+  if (typeof logger[loggerFnName] === "function") {
     logger[loggerFnName](text);
   } else {
     // fallback if function name not found
@@ -469,16 +499,18 @@ function logAndSend(res, status, logger, loggerFnName, text) {
 
 app.get("/autoplay_start", async (req, res) => {
   const { reqLogger } = req;
-  reqLogger.error(`Incoming /autoplay_start query params: ${JSON.stringify(req.query)}`);
+  reqLogger.error(
+    `Incoming /autoplay_start query params: ${JSON.stringify(req.query)}`,
+  );
   const { country } = req.query;
 
   if (globalState.autoplaying) {
-    logAndSend(res, 409, reqLogger, 'error', "Autoplay already started");
+    logAndSend(res, 409, reqLogger, "error", "Autoplay already started");
     return;
   }
 
   if (!country) {
-    logAndSend(res, 400, reqLogger, 'error', "Country parameter missing");
+    logAndSend(res, 400, reqLogger, "error", "Country parameter missing");
     return;
   }
 
@@ -501,12 +533,20 @@ app.get("/autoplay_start", async (req, res) => {
   try {
     language = await countryIsoToLanguageIso(countryIso);
   } catch (e) {
-    logAndSend(res, 500, reqLogger, "error", "Failed to get language for country");
+    logAndSend(
+      res,
+      500,
+      reqLogger,
+      "error",
+      "Failed to get language for country",
+    );
     return;
   }
   reqLogger.error(`country ${language}`);
 
-  res.send(`Autoplay started for country ${country} (ISO: ${countryIso}) language ${language}`);
+  res.send(
+    `Autoplay started for country ${country} (ISO: ${countryIso}) language ${language}`,
+  );
 
   if (language !== "ru" && language !== "en") {
     const lines = txtFile__loadLines("en");
@@ -524,14 +564,14 @@ app.get("/autoplay_start", async (req, res) => {
 
 app.get("/autoplay_stop", async (req, res) => {
   const { reqLogger } = req;
-  console.log('/autoplay_stop', reqLogger, globalState.currentAudioProcess)
+  console.log("/autoplay_stop", reqLogger, globalState.currentAudioProcess);
   startAutoplay_debounced.stop();
   if (globalState.currentAudioProcess) {
     globalState.currentAudioProcess.kill();
   }
-  globalState.autoplaying = false
-  globalState.lastReadLineIndex = 0
-  globalState.currentAudioProcess = null
+  globalState.autoplaying = false;
+  globalState.lastReadLineIndex = 0;
+  globalState.currentAudioProcess = null;
   res.send("Autoplay stopped");
   notifySend("/autoplay_stop");
 });
@@ -539,7 +579,7 @@ app.get("/autoplay_stop", async (req, res) => {
 app.get("/choose/:line", async (req, res) => {
   const { reqLogger } = req;
   const lineNumber = parseInt(req.params.line, 10);
-  await playAudio(reqLogger, lineNumber - 1, globalState.lastLanguage || 'ru');
+  await playAudio(reqLogger, lineNumber - 1, globalState.lastLanguage || "ru");
   res.send(`Playing chosen line ${lineNumber}`);
 });
 
@@ -556,7 +596,9 @@ app.get("/refresh_list", async (req, res) => {
 
 app.get("/notify_send", async (req, res) => {
   const { reqLogger } = req;
-  reqLogger.info(`/notify_send sending ${JSON.stringify(globalState.notifySend)}`);
+  reqLogger.info(
+    `/notify_send sending ${JSON.stringify(globalState.notifySend)}`,
+  );
   res.json(globalState.notifySend);
 });
 
@@ -572,7 +614,8 @@ app.post("/notify_send", express.json(), async (req, res) => {
 });
 
 app.get("/set_stop_after/:myint", async (req, res) => {
-  globalState.stopAfter = req.params.myint === "" ? parseInt(req.params.myint, 10) : null
+  globalState.stopAfter =
+    req.params.myint === "" ? parseInt(req.params.myint, 10) : null;
   res.send(`${globalState.stopAfter}`);
 });
 
